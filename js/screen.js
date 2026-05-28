@@ -211,22 +211,153 @@ export function renderGameList(navigate) {
 }
 
 export function renderGamePage(navigate) {
-    let currentItem = state.currentItem;
-    let cfg = CONFIGS[currentItem.type];
-    let phase = 'watch';
-    let isDrawing = false, hasDrawn = false;
-    let attempts = 0;
-    const MAX_ATTEMPTS = 3;
-
-    const div = mk('div', 'sky screen');
-    // ... For brevity, the exact same heavy builder logic from your monolith for Game Page
-    // (buildHeader, buildWatch, buildPractice, buildDone, buildMilestone, and canvas binding)
-    // applies here identically, mapped to `Maps('gameList')` for returning.
+    const { currentItem } = state;
+    const cfg = CONFIGS[currentItem.type];
     
-    // I am abstracting the innerHTML assignment of renderGamePage here so you can plug your 
-    // original GamePage code block exactly as-is into this function boundary without rewriting 
-    // the UI builder elements. Just replace `go(X)` with `Maps(X)` in your event handlers.
+    const div = mk('div', 'sky screen');
+    
+    div.innerHTML = `
+        <div class="cloud c1"></div><div class="cloud c2"></div>
+        <div class="content" style="padding: 16px 20px; display: flex; flex-direction: column;">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                <button id="backBtn" style="background:rgba(255,255,255,0.25); border:2px solid rgba(255,255,255,0.4); color:white; border-radius:50px; padding:8px 18px; font-weight:800; font-size:14px;">← Back</button>
+                <div style="font-size: 28px; font-weight: 900; color: white; text-shadow: 2px 3px 0 rgba(0,0,0,0.18);">${cfg.emoji} ${currentItem.letter}</div>
+                <div style="width: 70px;"></div> </div>
 
-    // Return the DOM block
-    return div; 
+            <div style="background: white; border-radius: 24px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); margin-bottom: 24px;">
+                <h3 class="fredoka" style="color: ${cfg.dark}; text-align: center; margin-bottom: 12px; font-size: 18px;">Watch & Learn!</h3>
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; border-radius: 14px; overflow: hidden;">
+                    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+                            src="https://www.youtube.com/embed/${currentItem.vid}?rel=0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 24px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: flex; flex-direction: column; align-items: center; padding-bottom: 100px;">
+                <h3 class="fredoka" style="color: ${cfg.dark}; margin-bottom: 8px; font-size: 18px;">Your Turn to Practice!</h3>
+                <p style="color: #6B7280; font-size: 14px; margin-bottom: 16px; text-align: center;">Draw the ${currentItem.type} <strong>${currentItem.letter}</strong> below:</p>
+                
+                <div style="border: 3px dashed #CBD5E1; border-radius: 20px; width: 100%; max-width: 320px; height: 220px; position: relative; background: #F8FAFC; touch-action: none;">
+                    <canvas id="drawCanvas" style="width: 100%; height: 100%; border-radius: 20px;"></canvas>
+                    <div id="ocrResult" style="position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-weight: 800; color: ${cfg.dark}; font-size: 18px; pointer-events: none; text-shadow: 1px 1px 0px white;"></div>
+                </div>
+
+                <div id="controlsDiv" style="display: flex; gap: 12px; margin-top: 16px; width: 100%; max-width: 320px;">
+                    <button id="clearBtn" style="flex: 1; padding: 14px; border-radius: 14px; background: #F1F5F9; color: #475569; font-weight: 800; font-size: 16px;">Clear</button>
+                    <button id="checkBtn" style="flex: 2; padding: 14px; border-radius: 14px; background: ${cfg.grad}; color: white; font-weight: 800; font-size: 16px; box-shadow: 0 4px 0 ${cfg.shadow};">Check! ✨</button>
+                </div>
+                
+                <button id="finishBtn" class="btn-orange" style="display: none; width: 100%; max-width: 320px; margin-top: 16px;">Awesome! Continue 🌟</button>
+            </div>
+        </div>
+        <div class="hills" style="opacity: 0.7;">${hillsSVG()}</div>
+    `;
+
+
+    setTimeout(() => {
+        div.querySelector('#backBtn').addEventListener('click', () => navigate('gameList'));
+
+        const canvas = div.querySelector('#drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const clearBtn = div.querySelector('#clearBtn');
+        const checkBtn = div.querySelector('#checkBtn');
+        const finishBtn = div.querySelector('#finishBtn');
+        const controlsDiv = div.querySelector('#controlsDiv');
+        const resultText = div.querySelector('#ocrResult');
+
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        ctx.lineWidth = 14;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = cfg.color;
+
+        let isDrawing = false;
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function start(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function stop(e) {
+            if (isDrawing) {
+                ctx.stroke();
+                ctx.beginPath();
+                isDrawing = false;
+            }
+        }
+
+        canvas.addEventListener('mousedown', start);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stop);
+        canvas.addEventListener('mouseout', stop);
+        canvas.addEventListener('touchstart', start, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stop);
+   
+        clearBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            resultText.textContent = '';
+        });
+
+       
+        checkBtn.addEventListener('click', async () => {
+            resultText.textContent = 'Checking... 👀';
+            checkBtn.style.opacity = '0.5';
+            checkBtn.disabled = true;
+
+            try {
+                
+                const result = await runOCR(canvas, currentItem.letter, currentItem.type);
+                
+                if (result.pass) {
+                    resultText.textContent = 'Correct! 🎉';
+                    resultText.style.color = '#10B981';
+                    
+                   
+                    state.completed.add(currentItem.id);
+                    state.user.score += currentItem.points;
+                    
+                
+                    controlsDiv.style.display = 'none';
+                    finishBtn.style.display = 'block';
+                } else {
+                    resultText.textContent = result.message || 'Try again! ✏️';
+                    resultText.style.color = '#EF4444';
+                }
+            } catch (err) {
+                resultText.textContent = 'Oops! Error checking. Try again.';
+            } finally {
+                checkBtn.style.opacity = '1';
+                checkBtn.disabled = false;
+            }
+        });
+
+        finishBtn.addEventListener('click', () => navigate('gameList'));
+    }, 0);
+
+    return div;
 }

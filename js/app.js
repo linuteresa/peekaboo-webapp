@@ -1,9 +1,8 @@
 import { state } from './state.js';
 import { initAiPanel, setupAiPanel } from './ai.js';
-import { renderOnboard, renderLogin, renderHome, renderGameList, renderGamePage } from './screens.js';
+import { renderLogin, renderHome, renderGameList, renderGamePage } from './screen.js';
 
 const SCREEN_MAP = {
-    onboard: renderOnboard,
     login: renderLogin,
     home: renderHome,
     gameList: renderGameList,
@@ -17,14 +16,19 @@ function navigate(screenName) {
 
 function render() {
     const appContainer = document.getElementById('app');
-    appContainer.innerHTML = ''; // Clear current screen
+    appContainer.innerHTML = ''; 
 
-    // Build the new screen and inject it
+    
     const renderFn = SCREEN_MAP[state.screen];
+    
+    if (!renderFn) {
+        console.error(`Screen "${state.screen}" not found in SCREEN_MAP.`);
+        return;
+    }
+
     const screenElement = renderFn(navigate);
     appContainer.appendChild(screenElement);
 
-    // Toggle AI panel visibility globally based on screen
     const aiPanel = document.getElementById('aiPanel');
     aiPanel.style.display = state.screen === 'gamePage' ? 'flex' : 'none';
 
@@ -33,8 +37,7 @@ function render() {
     }
 }
 
-// Bootstrap application
 document.addEventListener('DOMContentLoaded', () => {
     initAiPanel();
-    render(); // Initial render
+    render(); 
 });

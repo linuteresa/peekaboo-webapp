@@ -1,7 +1,7 @@
 import { LEVEL_THRESHOLDS } from './config.js';
 
 export const state = {
-    screen: 'onboard',
+    screen: 'login', 
     user: null,
     completed: new Set(),
     gameType: null,
