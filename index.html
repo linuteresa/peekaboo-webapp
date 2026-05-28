@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peekaboo Learn</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js" defer></script>
+    
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div id="app"></div>
+
+    <div id="aiPanel">
+        <div id="aiCard">
+            <div id="aiCardHeader">
+                <span style="font-size: 22px;" aria-hidden="true">🤖</span>
+                <div>
+                    <div class="ai-header-title">AI Tutor</div>
+                    <div class="ai-header-subtitle">gemma3 via Ollama</div>
+                </div>
+                <button id="closeAiBtn" class="ai-close-btn" aria-label="Close AI Tutor">✕</button>
+            </div>
+            <div id="aiCardBody">
+                <div id="aiMessages" aria-live="polite"></div>
+                <div id="aiQuickBtns"></div>
+                <input id="aiInput" placeholder="Ask the AI tutor..." aria-label="Type your question for the AI tutor" />
+                <button id="aiSendBtn">Ask Tutor ✨</button>
+                <div id="aiStatus" aria-live="polite"></div>
+            </div>
+        </div>
+        <button id="aiToggleBtn" title="AI Tutor" aria-label="Toggle AI Tutor">🤖</button>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
