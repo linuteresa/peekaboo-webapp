@@ -6,6 +6,63 @@ const OCR_ALIASES = {
     'U': ['V'], 'V': ['U'], 'M': ['N'], 'N': ['M'],
 };
 
+const LETTER_HINTS = {
+    A: 'start at the top, draw two slanted lines, then add a line across the middle.',
+    B: 'draw a straight line down, then add two round bumps on the right.',
+    C: 'make a big curve like a moon opening to the right.',
+    D: 'draw a straight line down, then add a big curve on the right.',
+    E: 'draw a straight line down, then add three short lines across.',
+    F: 'draw a straight line down, then add two lines across (top and middle).',
+    G: 'make a big C, then add a short line in the middle.',
+    H: 'draw two straight lines down, then connect them with a line in the middle.',
+    I: 'draw one straight line down.',
+    J: 'draw a line down and curve left at the bottom.',
+    K: 'draw a straight line down, then two slanted lines from the middle.',
+    L: 'draw a straight line down, then a line across the bottom.',
+    M: 'draw a line down, two slants to the middle, then another line down.',
+    N: 'draw a line down, a slant to the bottom right, then a line up.',
+    O: 'make a round circle.',
+    P: 'draw a line down, then add one round bump at the top.',
+    Q: 'make a circle, then add a short tail at the bottom right.',
+    R: 'draw a line down, add a bump at the top, then a slanted leg.',
+    S: 'draw a smooth curve like a snake.',
+    T: 'draw a line across the top, then a line down the middle.',
+    U: 'draw a curve down and up like a cup.',
+    V: 'draw two slanted lines that meet at the bottom.',
+    W: 'make two V shapes in a row.',
+    X: 'draw two crossing slanted lines.',
+    Y: 'draw a V, then a line straight down from the middle.',
+    Z: 'draw a line across the top, a diagonal down, then a line across the bottom.',
+};
+
+const NUMBER_HINTS = {
+    '0': 'make a round oval.',
+    '1': 'draw one straight line down.',
+    '2': 'start with a curve on top, then a diagonal, then a line across the bottom.',
+    '3': 'draw two stacked curves to the right.',
+    '4': 'draw a line down, a line across, then a line down on the right.',
+    '5': 'draw a line across the top, then down, then a curve at the bottom.',
+    '6': 'make a curve around and close it like a loop with a tail.',
+    '7': 'draw a line across the top, then a diagonal down.',
+    '8': 'draw two small circles stacked.',
+    '9': 'make a circle, then a straight line down.',
+    '10': 'write a 1, then a 0.',
+};
+
+function getCorrectionHint(expected, type) {
+    const normalized = expected.toString().toUpperCase();
+    if (type === 'letter') {
+        return LETTER_HINTS[normalized] || 'start at the top and follow the shape slowly.';
+    }
+    if (type === 'number') {
+        return NUMBER_HINTS[normalized] || 'write the number slowly and a little larger.';
+    }
+    if (type === 'fill') {
+        return `write the full word "${expected}" with clear letters.`;
+    }
+    return `write "${expected}" a little larger and slower.`;
+}
+
 export function preprocessForOCR(canvas) {
     const OUT = 300, PAD = 40;
     const src = canvas.getContext('2d');
@@ -96,8 +153,13 @@ export async function runOCR(canvas, expected, type) {
     }
 
     const displayRec = recog || '?';
-    const confidencePass = conf >= 80;
+    const confidencePass = conf >= 70;
     const finalPass = pass && confidencePass;
-    const message = finalPass ? '' : (!confidencePass ? `I'm not sure — write "${expected}" more clearly!` : `We read "${displayRec}" — write "${expected}" again!`);
+    const hint = getCorrectionHint(expected, type);
+    const message = finalPass
+        ? ''
+        : (!confidencePass
+            ? `I'm not sure — try writing "${expected}" bigger and clearer!`
+            : `We read "${displayRec}". Try this: ${hint}`);
     return { pass: finalPass, recognized: displayRec, confidence: conf, message };
 }

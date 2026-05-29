@@ -10,13 +10,45 @@ function isItemUnlocked(game, type) {
     return idx === 0 || state.completed.has(games[idx - 1].id);
 }
 
+function getNextItem(currentItem) {
+    const games = ALL_GAMES[currentItem.type] || [];
+    const idx = games.findIndex(item => item.id === currentItem.id);
+    return idx >= 0 ? games[idx + 1] : null;
+}
+
+function formatNextLabel(item) {
+    if (!item) return 'Continue';
+    if (item.type === 'fill') return `Next word: ${item.letter}`;
+    return `Next: ${item.letter}`;
+}
+
+function applyMascotFallback(root) {
+    root.querySelectorAll('img[data-fallback="elephant"]').forEach(img => {
+        const size = Number(img.dataset.fallbackSize) || img.width || 80;
+        const applyFallback = () => {
+            const wrap = document.createElement('div');
+            wrap.innerHTML = elephantSVG(size);
+            img.replaceWith(wrap.firstElementChild);
+        };
+        img.addEventListener('error', applyFallback, { once: true });
+        if (img.complete && img.naturalWidth === 0) {
+            applyFallback();
+        }
+    });
+}
+
+function scrollToTarget(root, targetId) {
+    const target = root.querySelector(`#${targetId}`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 export function renderLogin(navigate) {
     const div = mk('div', 'sky screen');
     div.innerHTML = `
         <div class="cloud c1"></div><div class="cloud c2"></div>
         <div class="content" style="align-items:center;justify-content:center;padding:32px 20px;gap:0;">
             <div style="animation:float 3s ease-in-out infinite;margin-bottom:-16px;z-index:2;">
-                <img src="./assets/mascot.png" alt="Peekaboo Elephant" style="width:140px;height:140px;object-fit:contain;" onerror="this.outerHTML='${elephantSVG(100)}'" />
+                <img src="./assets/mascot.png" alt="Peekaboo Elephant" style="width:140px;height:140px;object-fit:contain;" data-fallback="elephant" data-fallback-size="100" />
             </div>
             <div class="login-card">
                 <h2 class="fredoka" style="font-size:36px;background:linear-gradient(135deg,#FF6B35 0%,#FF9F2E 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:8px;">Peekaboo Learn</h2>
@@ -28,6 +60,7 @@ export function renderLogin(navigate) {
         </div>
         <div class="hills">${hillsSVG()}</div>
     `;
+    applyMascotFallback(div);
 
     setTimeout(() => {
         const inp = div.querySelector('#nameInput');
@@ -62,29 +95,31 @@ export function renderLogin(navigate) {
 }
 
 export function renderHome(navigate) {
-    const { user, completed } = state;
+    const { completed } = state;
+    const user = state.user || { name: 'Explorer', score: 0 };
     const level = getLevel(user.score);
     const nextT = LEVEL_THRESHOLDS[Math.min(level + 1, LEVEL_THRESHOLDS.length - 1)];
     const pct = level >= 5 ? 100 : Math.min(100, Math.round((user.score / nextT) * 100));
+    const needsName = !state.user;
 
     const div = mk('div', 'sky screen');
     div.innerHTML = `
         <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
         <div class="content">
-            <div class="app-shell">
+            <div class="app-shell" id="homeTop">
                 <div class="navbar">
                     <div class="logo-area">
-                        <img src="./assets/mascot.png" alt="Peekaboo" class="logo-avatar" onerror="this.outerHTML='${elephantSVG(36)}'" />
+                        <img src="./assets/mascot.png" alt="Peekaboo" class="logo-avatar" data-fallback="elephant" data-fallback-size="36" />
                         <div>
                             <div class="logo-title">Peekaboo Learn</div>
                             <div class="logo-subtitle">Play. Learn. Shine.</div>
                         </div>
                     </div>
                     <div class="nav-links">
-                        <button class="nav-link active" type="button">Home</button>
-                        <button class="nav-link" type="button">How It Works</button>
-                        <button class="nav-link" type="button">Benefits</button>
-                        <button class="nav-link" type="button">For Parents</button>
+                        <button class="nav-link active" type="button" data-scroll-target="homeTop">Home</button>
+                        <button class="nav-link" type="button" data-scroll-target="howItWorksSection">How It Works</button>
+                        <button class="nav-link" type="button" data-scroll-target="benefitsSection">Benefits</button>
+                        <button class="nav-link" type="button" data-scroll-target="parentsSection">For Parents</button>
                     </div>
                     <button id="getStartedBtn" class="nav-cta" type="button">Get Started</button>
                 </div>
@@ -96,14 +131,42 @@ export function renderHome(navigate) {
                         <button id="startBtn" class="btn-purple" type="button">Start Learning Now →</button>
                     </div>
                     <div class="hero-art">
-                        <img src="./assets/mascot.png" alt="Peekaboo Elephant" class="hero-mascot" onerror="this.outerHTML='${elephantSVG(180)}'" />
+                        <img src="./assets/mascot.png" alt="Peekaboo Elephant" class="hero-mascot" data-fallback="elephant" data-fallback-size="180" />
                         <div class="hero-chip chip-1">123</div>
                         <div class="hero-chip chip-2">A</div>
                         <div class="hero-chip chip-3">♪</div>
                     </div>
                 </div>
 
-                <div class="feature-strip">
+                <div class="info-section" id="howItWorksSection">
+                    <div class="section-title">How It Works</div>
+                    <div class="section-subtitle">A simple, playful path to steady progress.</div>
+                    <div class="steps-grid">
+                        <div class="step-card">
+                            <div class="step-icon">1</div>
+                            <div>
+                                <div class="step-title">Pick a game</div>
+                                <div class="step-text">Choose letters, numbers, or words to explore.</div>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-icon">2</div>
+                            <div>
+                                <div class="step-title">Watch &amp; trace</div>
+                                <div class="step-text">See the example and practice your draw.</div>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-icon">3</div>
+                            <div>
+                                <div class="step-title">Earn stars</div>
+                                <div class="step-text">Get instant feedback and keep leveling up.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-strip" id="benefitsSection">
                     <div class="feature-card">
                         <div class="feature-icon">🎲</div>
                         <div>
@@ -136,7 +199,7 @@ export function renderHome(navigate) {
             </div>
 
             <div class="app-shell" id="gameSection">
-                <div class="dashboard-preview">
+                <div class="dashboard-preview" id="parentsSection">
                     <div class="dashboard-header">
                         <div>
                             <div class="section-title">Choose a learning adventure</div>
@@ -169,9 +232,23 @@ export function renderHome(navigate) {
                     </div>
                 </div>
             </div>
+            ${needsName ? `
+            <div class="welcome-overlay" id="welcomeOverlay">
+                <div class="welcome-modal">
+                    <img src="./assets/mascot.png" alt="Peekaboo Elephant" class="welcome-mascot" data-fallback="elephant" data-fallback-size="120" />
+                    <div class="login-card">
+                        <h2 class="fredoka" style="font-size:32px;background:linear-gradient(135deg,#FF6B35 0%,#FF9F2E 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:8px;">Welcome!</h2>
+                        <p style="text-align:center;font-size:15px;color:#4B5563;margin-bottom:22px;font-weight:700;">What's your name, little explorer?</p>
+                        <input id="welcomeNameInput" class="name-input" placeholder="Type your name here 😊" />
+                        <button id="welcomeStartBtn" class="btn-orange" style="width:100%;margin-top:16px;opacity:0.5;pointer-events:none;">LET'S GO! 🚀</button>
+                        <p style="text-align:center;font-size:13px;color:#7B8896;margin-top:14px;font-weight:600;">No account needed — just start learning!</p>
+                    </div>
+                </div>
+            </div>` : ''}
         </div>
         <div class="hills">${hillsSVG()}</div>
     `;
+    applyMascotFallback(div);
 
     setTimeout(() => {
         const start = () => {
@@ -179,12 +256,49 @@ export function renderHome(navigate) {
             if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             playPopSound();
         };
+        const navLinks = Array.from(div.querySelectorAll('.nav-link'));
+        navLinks.forEach(btn => {
+            btn.addEventListener('click', () => {
+                navLinks.forEach(link => link.classList.remove('active'));
+                btn.classList.add('active');
+                scrollToTarget(div, btn.dataset.scrollTarget);
+                playPopSound();
+            });
+        });
         div.querySelector('#startBtn').addEventListener('click', start);
         div.querySelector('#getStartedBtn').addEventListener('click', start);
         div.querySelector('#dashBtn').addEventListener('click', () => {
             playPopSound();
             navigate('dashboard');
         });
+
+        if (needsName) {
+            const nameInput = div.querySelector('#welcomeNameInput');
+            const startBtn = div.querySelector('#welcomeStartBtn');
+            const enableStart = () => {
+                const v = nameInput.value.trim();
+                startBtn.style.opacity = v ? '1' : '0.5';
+                startBtn.style.pointerEvents = v ? 'auto' : 'none';
+                if (v) playPopSound();
+            };
+            nameInput.addEventListener('input', enableStart);
+            startBtn.addEventListener('click', () => {
+                const n = nameInput.value.trim();
+                if (n) {
+                    playSuccessSound();
+                    state.user = { name: n, score: 0 };
+                    setTimeout(() => navigate('home'), 200);
+                }
+            });
+            nameInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter' && nameInput.value.trim()) {
+                    playSuccessSound();
+                    state.user = { name: nameInput.value.trim(), score: 0 };
+                    setTimeout(() => navigate('home'), 200);
+                }
+            });
+            nameInput.focus();
+        }
 
         const grid = div.querySelector('#tilesGrid');
         [
@@ -223,7 +337,8 @@ export function renderHome(navigate) {
 }
 
 export function renderDashboard(navigate) {
-    const { user, completed } = state;
+    const { completed } = state;
+    const user = state.user || { name: 'Explorer', score: 0 };
     const level = getLevel(user.score);
     const nextT = LEVEL_THRESHOLDS[Math.min(level + 1, LEVEL_THRESHOLDS.length - 1)];
     const pct = level >= 5 ? 100 : Math.min(100, Math.round((user.score / nextT) * 100));
@@ -284,7 +399,7 @@ export function renderDashboard(navigate) {
         <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
         <div class="content">
             <div class="app-shell">
-                <div class="dashboard-titlebar">
+                <div class="dashboard-titlebar" id="dashboardTop">
                     <button id="backBtn" class="chip-btn" type="button">← Back</button>
                     <div>
                         <div class="dashboard-title">Parent Dashboard</div>
@@ -294,18 +409,18 @@ export function renderDashboard(navigate) {
                 <div class="dashboard-shell">
                     <div class="dashboard-sidebar">
                         <div class="profile-card">
-                            <img src="./assets/mascot.png" alt="Peekaboo" class="profile-avatar" onerror="this.outerHTML='${elephantSVG(60)}'" />
+                            <img src="./assets/mascot.png" alt="Peekaboo" class="profile-avatar" data-fallback="elephant" data-fallback-size="60" />
                             <div class="profile-name">${esc(user.name)}</div>
                             <div class="profile-sub">Level ${level} Explorer</div>
                         </div>
-                        <button class="sidebar-link active" type="button">🏠 Home</button>
-                        <button class="sidebar-link" type="button">🎮 Games</button>
-                        <button class="sidebar-link" type="button">🏆 Achievements</button>
-                        <button class="sidebar-link" type="button">👨‍👩‍👧 Parents</button>
-                        <button class="sidebar-link" type="button">⚙️ Settings</button>
+                        <button class="sidebar-link active" type="button" data-dash-target="dashboardTop">🏠 Home</button>
+                        <button class="sidebar-link" type="button" data-dash-target="dashboardGames">🎮 Games</button>
+                        <button class="sidebar-link" type="button" data-dash-target="dashboardAchievements">🏆 Achievements</button>
+                        <button class="sidebar-link" type="button" data-dash-target="dashboardParents">👨‍👩‍👧 Parents</button>
+                        <button class="sidebar-link" type="button" data-dash-target="dashboardSettings">⚙️ Settings</button>
                     </div>
                     <div class="dashboard-main">
-                        <div class="dashboard-card">
+                        <div class="dashboard-card" id="dashboardProgress">
                             <div class="card-header">
                                 <div>
                                     <div class="card-title">Progress Overview</div>
@@ -323,7 +438,7 @@ export function renderDashboard(navigate) {
                             </div>
                             <div class="progress-caption">Next level at ${nextT} points</div>
                         </div>
-                        <div class="dashboard-card">
+                        <div class="dashboard-card" id="dashboardStruggles">
                             <div class="card-title">Struggle Spots</div>
                             <div class="card-subtitle">These are great opportunities for practice.</div>
                             <div class="metric-list">
@@ -332,13 +447,13 @@ export function renderDashboard(navigate) {
                         </div>
                     </div>
                     <div class="dashboard-side">
-                        <div class="dashboard-card">
+                        <div class="dashboard-card" id="dashboardAchievements">
                             <div class="card-title">Achievements</div>
                             <div class="achievement-list">
                                 ${renderAchievements()}
                             </div>
                         </div>
-                        <div class="dashboard-card">
+                        <div class="dashboard-card" id="dashboardGames">
                             <div class="card-title">Try Next</div>
                             <div class="try-next">
                                 <div class="try-icon">✨</div>
@@ -349,21 +464,55 @@ export function renderDashboard(navigate) {
                             </div>
                             <button id="practiceBtn" class="btn-purple small" type="button">Start Practice</button>
                         </div>
+                        <div class="dashboard-card" id="dashboardParents">
+                            <div class="card-title">Parent Tips</div>
+                            <div class="card-subtitle">Small routines that build big wins.</div>
+                            <div class="parent-tips">
+                                <div class="tip-item">Read the letter out loud together.</div>
+                                <div class="tip-item">Celebrate effort, not just correctness.</div>
+                                <div class="tip-item">Practice for 5 minutes, then take a break.</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-card" id="dashboardSettings">
+                            <div class="card-title">Settings</div>
+                            <div class="card-subtitle">Learning preferences at a glance.</div>
+                            <div class="settings-list">
+                                <div class="setting-row"><span>Sound effects</span><span class="setting-value">On</span></div>
+                                <div class="setting-row"><span>Daily goal</span><span class="setting-value">10 mins</span></div>
+                                <div class="setting-row"><span>Reward stories</span><span class="setting-value">Enabled</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="hills">${hillsSVG()}</div>
     `;
+    applyMascotFallback(div);
 
     setTimeout(() => {
         div.querySelector('#backBtn').addEventListener('click', () => {
             playPopSound();
             navigate('home');
         });
+        const sidebarLinks = Array.from(div.querySelectorAll('.sidebar-link'));
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                sidebarLinks.forEach(item => item.classList.remove('active'));
+                link.classList.add('active');
+                scrollToTarget(div, link.dataset.dashTarget);
+                playPopSound();
+            });
+        });
         div.querySelector('#practiceBtn').addEventListener('click', () => {
             playPopSound();
-            navigate('home');
+            if (suggestion) {
+                state.currentItem = suggestion;
+                state.gameType = suggestion.type;
+                navigate('gamePage');
+            } else {
+                navigate('home');
+            }
         });
     }, 0);
 
@@ -465,6 +614,7 @@ export function renderGameList(navigate) {
 export function renderGamePage(navigate) {
     const { currentItem } = state;
     const cfg = CONFIGS[currentItem.type];
+    const nextItem = getNextItem(currentItem);
 
     const div = mk('div', 'sky screen');
 
@@ -514,8 +664,13 @@ export function renderGamePage(navigate) {
 
     setTimeout(() => {
         playElephantSound();
+        let autoAdvanceTimer = null;
 
         div.querySelector('#backBtn').addEventListener('click', () => {
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
             playPopSound();
             navigate('gameList');
         });
@@ -616,6 +771,17 @@ export function renderGamePage(navigate) {
                         if (leveledUp) {
                             finishBtn.textContent = '🎉 LEVEL UP! 🎉';
                             finishBtn.dataset.leveledUp = 'true';
+                        } else if (nextItem) {
+                            finishBtn.textContent = formatNextLabel(nextItem);
+                            finishBtn.dataset.leveledUp = 'false';
+                            autoAdvanceTimer = setTimeout(() => {
+                                playProgressSound();
+                                state.currentItem = nextItem;
+                                navigate('gamePage');
+                            }, 1200);
+                        } else {
+                            finishBtn.textContent = 'Back to list';
+                            finishBtn.dataset.leveledUp = 'false';
                         }
                     }, 600);
                 } else {
@@ -634,8 +800,15 @@ export function renderGamePage(navigate) {
 
         finishBtn.addEventListener('click', () => {
             playProgressSound();
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
             if (finishBtn.dataset.leveledUp === 'true') {
                 navigate('storyPage');
+            } else if (nextItem) {
+                state.currentItem = nextItem;
+                navigate('gamePage');
             } else {
                 navigate('gameList');
             }
