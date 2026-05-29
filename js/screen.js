@@ -2,7 +2,7 @@ import { mk, esc, elephantSVG, hillsSVG } from './utils.js';
 import { playPopSound, playSuccessSound, playErrorSound, playElephantSound, playProgressSound, setSoundEnabled } from './sounds.js';
 import { state, getLevel, persistState } from './state.js';
 import { CONFIGS, ALL_GAMES, LEVEL_THRESHOLDS } from './config.js';
-import { runOCR } from './ocr.js';
+import { runOCR, drawTraceGuide } from './ocr.js';
 
 function isItemUnlocked(game, type) {
     const games = ALL_GAMES[type];
@@ -699,6 +699,9 @@ export function renderGamePage(navigate) {
         ctx.lineJoin = 'round';
         ctx.strokeStyle = cfg.color;
 
+        // Draw trace guide
+        drawTraceGuide(canvas, currentItem.letter);
+        
         let isDrawing = false;
 
         function getPos(e) {
@@ -746,6 +749,7 @@ export function renderGamePage(navigate) {
         clearBtn.addEventListener('click', () => {
             playPopSound();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTraceGuide(canvas, currentItem.letter);
             resultText.textContent = '';
         });
 

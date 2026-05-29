@@ -49,6 +49,23 @@ const NUMBER_HINTS = {
     '10': 'write a 1, then a 0.',
 };
 
+export function drawTraceGuide(canvas, letter) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    // Clear canvas with light background
+    ctx.fillStyle = '#F3F4F6';
+    ctx.fillRect(0, 0, w, h);
+    
+    // Draw faint letter outline
+    ctx.font = `bold ${Math.min(w, h) * 0.6}px Arial, sans-serif`;
+    ctx.fillStyle = '#E5E7EB';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(letter.toUpperCase(), w / 2, h / 2);
+}
+
 function getCorrectionHint(expected, type) {
     const normalized = expected.toString().toUpperCase();
     if (type === 'letter') {
@@ -153,7 +170,7 @@ export async function runOCR(canvas, expected, type) {
     }
 
     const displayRec = recog || '?';
-    const confidencePass = conf >= 70;
+    const confidencePass = conf >= 35;
     const finalPass = pass && confidencePass;
     const hint = getCorrectionHint(expected, type);
     const message = finalPass
