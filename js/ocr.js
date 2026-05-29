@@ -96,6 +96,8 @@ export async function runOCR(canvas, expected, type) {
     }
 
     const displayRec = recog || '?';
-    const message = pass ? '' : `We read "${displayRec}" — write "${expected}" again!`;
-    return { pass, recognized: displayRec, confidence: conf, message };
+    const confidencePass = conf >= 80;
+    const finalPass = pass && confidencePass;
+    const message = finalPass ? '' : (!confidencePass ? `I'm not sure — write "${expected}" more clearly!` : `We read "${displayRec}" — write "${expected}" again!`);
+    return { pass: finalPass, recognized: displayRec, confidence: conf, message };
 }

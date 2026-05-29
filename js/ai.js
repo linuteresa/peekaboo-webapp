@@ -143,3 +143,27 @@ function setAiStatus(t) {
     const e = document.getElementById('aiStatus');
     if (e) e.textContent = t;
 }
+
+export async function generateRewardStory(userName, currentItem) {
+    const prompt = `Write a 3-sentence children's adventure story for a 4-year-old named ${userName} about the letter/word "${currentItem.letter}". Make it magical, fun, and use simple words. No markdown or asterisks. Just plain text.`;
+
+    try {
+        const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: OLLAMA_MODEL,
+                prompt: prompt,
+                stream: false,
+                options: { temperature: 0.8, num_predict: 200 }
+            })
+        });
+
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        return data.response ? data.response.trim() : 'Once upon a time, there was a magical adventure waiting just for you!';
+    } catch (err) {
+        console.error('Story generation error:', err);
+        return `Once upon a time, ${userName} discovered something amazing about "${currentItem.letter}"! It was the most wonderful discovery ever. And they lived happily ever after!`;
+    }
+}

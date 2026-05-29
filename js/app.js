@@ -1,12 +1,14 @@
 import { state } from './state.js';
 import { initAiPanel, setupAiPanel } from './ai.js';
-import { renderLogin, renderHome, renderGameList, renderGamePage } from './screen.js';
+import { renderLogin, renderHome, renderGameList, renderGamePage, renderStoryPage, renderDashboard } from './screen.js';
 
 const SCREEN_MAP = {
     login: renderLogin,
     home: renderHome,
+    dashboard: renderDashboard,
     gameList: renderGameList,
-    gamePage: renderGamePage
+    gamePage: renderGamePage,
+    storyPage: renderStoryPage
 };
 
 function navigate(screenName) {
@@ -34,6 +36,8 @@ function render() {
 
     if (state.screen === 'gamePage') {
         setupAiPanel();
+    } else if (state.screen === 'storyPage') {
+        aiPanel.style.display = 'none';
     }
 }
 
