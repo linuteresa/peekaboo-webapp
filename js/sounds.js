@@ -1,5 +1,10 @@
 // Audio context for generating sounds
 let audioContext = null;
+let SOUND_ENABLED = true;
+
+export function setSoundEnabled(enabled) {
+    SOUND_ENABLED = !!enabled;
+}
 
 function getAudioContext() {
     if (!audioContext) {
@@ -9,6 +14,7 @@ function getAudioContext() {
 }
 
 export function playPopSound() {
+    if (!SOUND_ENABLED) return;
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;
@@ -29,6 +35,7 @@ export function playPopSound() {
 }
 
 export function playSuccessSound() {
+    if (!SOUND_ENABLED) return;
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;
@@ -52,6 +59,7 @@ export function playSuccessSound() {
 }
 
 export function playErrorSound() {
+    if (!SOUND_ENABLED) return;
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;
@@ -73,6 +81,7 @@ export function playErrorSound() {
 }
 
 export function playElephantSound() {
+    if (!SOUND_ENABLED) return;
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;
@@ -94,6 +103,7 @@ export function playElephantSound() {
 }
 
 export function playProgressSound() {
+    if (!SOUND_ENABLED) return;
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;

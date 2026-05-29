@@ -1,6 +1,6 @@
 import { mk, esc, elephantSVG, hillsSVG } from './utils.js';
-import { playPopSound, playSuccessSound, playErrorSound, playElephantSound, playProgressSound } from './sounds.js';
-import { state, getLevel } from './state.js';
+import { playPopSound, playSuccessSound, playErrorSound, playElephantSound, playProgressSound, setSoundEnabled } from './sounds.js';
+import { state, getLevel, persistState } from './state.js';
 import { CONFIGS, ALL_GAMES, LEVEL_THRESHOLDS } from './config.js';
 import { runOCR } from './ocr.js';
 
@@ -118,7 +118,6 @@ export function renderHome(navigate) {
                     <div class="nav-links">
                         <button class="nav-link active" type="button" data-scroll-target="homeTop">Home</button>
                         <button class="nav-link" type="button" data-scroll-target="howItWorksSection">How It Works</button>
-                        <button class="nav-link" type="button" data-scroll-target="benefitsSection">Benefits</button>
                         <button class="nav-link" type="button" data-scroll-target="parentsSection">For Parents</button>
                     </div>
                     <button id="getStartedBtn" class="nav-cta" type="button">Get Started</button>
@@ -256,6 +255,14 @@ export function renderHome(navigate) {
             if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             playPopSound();
         };
+
+        if (state.pendingScrollTarget) {
+            const target = state.pendingScrollTarget;
+            state.pendingScrollTarget = null;
+            const el = div.querySelector(`#${target}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         const navLinks = Array.from(div.querySelectorAll('.nav-link'));
         navLinks.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -287,6 +294,7 @@ export function renderHome(navigate) {
                 if (n) {
                     playSuccessSound();
                     state.user = { name: n, score: 0 };
+                    persistState();
                     setTimeout(() => navigate('home'), 200);
                 }
             });
@@ -294,6 +302,7 @@ export function renderHome(navigate) {
                 if (e.key === 'Enter' && nameInput.value.trim()) {
                     playSuccessSound();
                     state.user = { name: nameInput.value.trim(), score: 0 };
+                    persistState();
                     setTimeout(() => navigate('home'), 200);
                 }
             });
@@ -477,9 +486,8 @@ export function renderDashboard(navigate) {
                             <div class="card-title">Settings</div>
                             <div class="card-subtitle">Learning preferences at a glance.</div>
                             <div class="settings-list">
-                                <div class="setting-row"><span>Sound effects</span><span class="setting-value">On</span></div>
-                                <div class="setting-row"><span>Daily goal</span><span class="setting-value">10 mins</span></div>
-                                <div class="setting-row"><span>Reward stories</span><span class="setting-value">Enabled</span></div>
+                                <div class="setting-row"><span>Sound effects</span><button id="soundToggle" class="setting-toggle" type="button">${state.settings?.sound !== false ? 'On' : 'Off'}</button></div>
+                                <div class="setting-row"><span>Reward stories</span><button id="rewardStoriesToggle" class="setting-toggle" type="button">${state.settings?.rewardStories !== false ? 'On' : 'Off'}</button></div>
                             </div>
                         </div>
                     </div>

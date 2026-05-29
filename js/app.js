@@ -1,5 +1,6 @@
-import { state } from './state.js';
+import { state, persistState } from './state.js';
 import { initAiPanel, setupAiPanel } from './ai.js';
+import { setSoundEnabled } from './sounds.js';
 import { renderLogin, renderHome, renderGameList, renderGamePage, renderStoryPage, renderDashboard } from './screen.js';
 
 const SCREEN_MAP = {
@@ -43,5 +44,12 @@ function render() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initAiPanel();
+    setSoundEnabled(state.settings?.sound !== false);
+
+    window.addEventListener('beforeunload', persistState);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') persistState();
+    });
+
     render(); 
 });
